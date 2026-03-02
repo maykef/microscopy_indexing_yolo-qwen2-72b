@@ -43,7 +43,7 @@ RUN pip3 install --no-cache-dir \
     protobuf
 
 # Flash Attention (as in your original)
-RUN pip3 install --no-cache-dir flash-attn --no-build-isolation
+RUN pip3 install --no-cache-dir flash-attn==2.8.3 --no-build-isolation
 
 # ---------------------------
 # Ultralytics (explicit)

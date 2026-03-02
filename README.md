@@ -254,3 +254,26 @@ microscopy_indexing_yolo-qwen2-72b/
     ├── visual/images/                  # Rendered PDF pages
     └── scribe/                         # Extraction results
 ```
+⚠️ TECHNICAL ALERT: VRAM OOM DURING MODEL LOADING
+
+If your Qwen2-VL-72B (or any 70B+ class model) fails with a torch.OutOfMemoryError specifically during the loading/materialization phase (e.g., crashing at Layer 50-60 out of 80), the primary culprit is a Flash Attention version mismatch or an unoptimized attention backend.
+
+Why this happens:
+
+Even if your GPU has enough VRAM to hold the weights (approx. 72–80 GB for 8-bit), the process of moving those weights from CPU to GPU creates a "memory peak."
+
+The Overhead: When Flash Attention is not correctly aligned with your torch version or your GPU architecture (like the RTX 6000 Blackwell), the system fails to allocate the necessary "workspace" buffers for the attention kernels.
+
+The "SDPA" Fallback: If the environment doesn't see a compatible Flash Attention build, it may attempt to fall back to standard Scaled Dot Product Attention (SDPA), which is significantly more memory-intensive and will instantly blow your VRAM budget on a 72B model.
+
+The Symptoms:
+
+Traceback location: Errors occurring in modeling_utils.py or core_model_loading.py while "materializing" layers.
+
+The "Last Mile" Crash: The GPU shows 90%+ usage, then crashes just before the final layers finish loading.
+
+The Solution for Blackwell/CUDA 13 Environments:
+
+Pin Flash Attention: Ensure you are using a version verified for your stack (e.g., flash-attn==2.8.3).
+
+Force Build Isolation: Use pip install flash-attn --no-build-isolation to ensure the kernels are compiled against your specific nightly Torch headers.
